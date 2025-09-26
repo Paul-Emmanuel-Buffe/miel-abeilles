@@ -2,6 +2,16 @@ import pandas as pd
 from datetime import datetime
 
 class MrBee:
+    #  Infos de toutes les abeilles générées          
+#    id          : id abeille
+# simulation_id  : id de la simulation (main => 'simulation_id = 1' )
+# generation     : génération de l'abeille 
+# distance       : distance parcourue par l'abeille
+# parent_1       : id parent 1
+# parent_2       : id parent 2
+# chemin         : parcours sous forme de liste
+# timestamp      : Date & heure de l'enregistrement
+    
     def __init__(self):
         # DataFrame vide pour stocker toutes les abeilles
         self.bees_df = pd.DataFrame(columns=[

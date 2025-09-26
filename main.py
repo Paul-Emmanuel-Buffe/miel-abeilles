@@ -1,11 +1,13 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import pandas as pd
 
+#
 from selection_rules import create_child
 from utils import chemin_aleatoire, distance_totale, mutation
 from visuals import plot_best_path, plot_avg_distance, plot_genealogy
-
+from bee_count import MrBee
 
 
 # ----------------------
@@ -26,7 +28,7 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 500
+n_generations = 50
 mutation_rate = 0.1
 elitisme_rates = [0.5, 0.4, 0.3, 0.2]
 
@@ -43,6 +45,9 @@ parent_history = []  # Liste de tuples (parents, enfants) par génération
 # ----------------------
 # Boucle évolution
 # ----------------------
+bee_counter = MrBee() # Initialisation de l'objet de comptage
+simulation_id = 1     # Renseigner l'id de la simulation
+
 for generation in range(n_generations):
     distances = [distance_totale(chemin, fleurs) for chemin in population]
     avg_distances.append(np.mean(distances))
@@ -54,12 +59,24 @@ for generation in range(n_generations):
 
     enfants = []
     gen_parents_children = []  # stocke les relations parent->enfant
+    
     for _ in range(n_abeilles - n_parents):
         p1, p2 = random.sample(parents, 2)
         child = create_child(p1, p2, all_nodes, hive=ruche)
         child = mutation(child, mutation_rate)
         enfants.append(child)
         gen_parents_children.append((p1, p2, child))
+
+        # Implémentation de la prise de métrique pour MrBee
+        bee_counter.add_bee(
+            simulation_id=simulation_id,
+            generation=generation,
+            distance=distance_totale(child, fleurs),
+            parent_1=p1,
+            parent_2=p2,
+            chemin=child
+        )
+
     parent_history.append(gen_parents_children)
 
     population = parents + enfants
@@ -77,3 +94,17 @@ plot_best_path(fleurs, best_chemin)
 plot_avg_distance(avg_distances, n_generations)
 plot_genealogy(parent_history, best_chemin, n_generations)
 
+# Enregistrement de TOUTES les abeilles de la simulation effectuée
+bee_counter.save_csv("bees_log.csv")
+
+# +++++++ A suprimer => visualistion des données ++++
+
+import pandas as pd
+
+# Charger le CSV
+df = pd.read_csv("bees_log.csv")
+
+# Affichage 
+print("\n=== Aperçu des 5 premières abeilles ===\n")
+print(df.info())  
+print("\n======================================\n")
