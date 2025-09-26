@@ -55,30 +55,3 @@ def create_child(parent_1, parent_2, all_nodes, hive):
     child.append(hive)
 
     return child
-
-
-
-#================ TEST A SUPPRIMER ===================#
-# --- CRÉATION DES PARENTS ---
-all_nodes = list(range(20))  # 0 = ruche, 1-19 = fleurs
-hive = 0
-parent_1 = [0] + random.sample(range(1, 20), 19) + [0]
-parent_2 = [0] + random.sample(range(1, 20), 19) + [0]
-
-# --- CRÉATION DE L'ENFANT ---
-child = create_child(parent_1, parent_2, all_nodes, hive)
-
-# --- ANALYSE DES ARÊTES HÉRITÉES ---
-child_edges = [(child[i], child[i+1]) for i in range(len(child)-1)]
-edges_1 = [(parent_1[i], parent_1[i+1]) for i in range(len(parent_1)-1)]
-edges_2 = [(parent_2[i], parent_2[i+1]) for i in range(len(parent_2)-1)]
-set_edges_1 = set(tuple(sorted((a,b))) for a,b in edges_1)
-set_edges_2 = set(tuple(sorted((a,b))) for a,b in edges_2)
-common_edges = set_edges_1 & set_edges_2
-inherited_edges = [tuple(sorted((a,b))) for a,b in child_edges if tuple(sorted((a,b))) in common_edges]
-
-# --- AFFICHAGE ---
-print("Parent 1 :", parent_1)
-print("Parent 2 :", parent_2)
-print("Enfant  :", child)
-print("Arêtes héritées :", inherited_edges)
