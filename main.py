@@ -2,6 +2,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from selection_rules import create_child
+from utils import chemin_aleatoire, distance_totale, mutation
+
 
 # ----------------------
 # Coordonnées des fleurs + ruche
@@ -24,36 +26,6 @@ n_abeilles = 100
 n_generations = 500
 mutation_rate = 0.1
 elitisme_rates = [0.5, 0.4, 0.3, 0.2]
-
-# ----------------------
-# Fonctions utilitaires
-# ----------------------
-def chemin_aleatoire(fleurs, ruche=0):
-    non_visitees = list(range(1, len(fleurs)))
-    chemin = [ruche]
-    while non_visitees:
-        next_idx = random.choice(non_visitees)
-        chemin.append(next_idx)
-        non_visitees.remove(next_idx)
-    chemin.append(ruche)
-    return chemin
-
-def distance_totale(chemin, fleurs):
-    distance = 0
-    x_prev, y_prev = fleurs[chemin[0]]
-    for idx in chemin[1:]:
-        x, y = fleurs[idx]
-        distance += np.sqrt((x - x_prev)**2 + (y - y_prev)**2)
-        x_prev, y_prev = x, y
-    return distance
-
-def mutation(chemin, mutation_rate):
-    genome_mut = chemin.copy()
-    if np.random.rand() < mutation_rate:
-        i, j = np.random.choice(range(1, len(genome_mut)-1), 2, replace=False)
-        genome_mut[i], genome_mut[j] = genome_mut[j], genome_mut[i]
-    return genome_mut
-
 
 # ----------------------
 # Génération initiale
