@@ -58,7 +58,7 @@ def create_child(parent_1, parent_2, all_nodes, hive):
 
 
 
-
+#================ TEST A SUPPRIMER ===================#
 # --- CRÉATION DES PARENTS ---
 all_nodes = list(range(20))  # 0 = ruche, 1-19 = fleurs
 hive = 0
