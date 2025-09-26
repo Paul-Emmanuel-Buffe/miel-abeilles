@@ -28,8 +28,8 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 50
-mutation_rate = 0.1
+n_generations = 500
+mutation_rate = 0.035
 elitisme_rates = [0.5, 0.4, 0.3, 0.2]
 
 # ----------------------
@@ -99,7 +99,6 @@ bee_counter.save_csv("bees_log.csv")
 
 # +++++++ A suprimer => visualistion des données ++++
 
-import pandas as pd
 
 # Charger le CSV
 df = pd.read_csv("bees_log.csv")
