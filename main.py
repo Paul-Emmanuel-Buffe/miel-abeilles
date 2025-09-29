@@ -3,7 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import pandas as pd
 
-#
+
 from selection_rules import create_child
 from utils import chemin_aleatoire, distance_totale, mutation
 from visuals import plot_best_path, plot_avg_distance, plot_genealogy
@@ -28,9 +28,9 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 500
-mutation_rate = 0.035
-elitisme_rates = [0.5, 0.4, 0.3, 0.2]
+n_generations = 50
+mutation_rate = 0.20
+elitisme_rates = [0.2]
 
 # ----------------------
 # Génération initiale
@@ -42,7 +42,7 @@ all_nodes = list(range(len(fleurs)))
 avg_distances = []
 parent_history = []  # Liste de tuples (parents, enfants) par génération
 
-# ----------------------
+## ----------------------
 # Boucle évolution
 # ----------------------
 bee_counter = MrBee() # Initialisation de l'objet de comptage
@@ -57,6 +57,9 @@ for generation in range(n_generations):
     sorted_indices = np.argsort(distances)
     parents = [population[i] for i in sorted_indices[:n_parents]]
 
+    # Calculer le taux d'élitisme de cette génération
+    current_elitisme_rate = elitisme_rates[min(generation, len(elitisme_rates)-1)]
+
     enfants = []
     gen_parents_children = []  # stocke les relations parent->enfant
     
@@ -67,20 +70,21 @@ for generation in range(n_generations):
         enfants.append(child)
         gen_parents_children.append((p1, p2, child))
 
-        # Implémentation de la prise de métrique pour MrBee
+        # Enregistrement transmis à MrBee() - pour chaque enfant créé
         bee_counter.add_bee(
             simulation_id=simulation_id,
             generation=generation,
             distance=distance_totale(child, fleurs),
             parent_1=p1,
             parent_2=p2,
-            chemin=child
+            chemin=child,
+            n_generations=n_generations,
+            mutation_rate=mutation_rate,
+            elitisme_rate=current_elitisme_rate
         )
 
     parent_history.append(gen_parents_children)
-
     population = parents + enfants
-
 # ----------------------
 # Résultat final
 # ----------------------
@@ -105,5 +109,5 @@ df = pd.read_csv("bees_log.csv")
 
 # Affichage 
 print("\n=== Aperçu des 5 premières abeilles ===\n")
-print(df.info())  
+print(df.head())  
 print("\n======================================\n")
