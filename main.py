@@ -3,8 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
-from selection_rules import create_child
+from selection_rules import create_child, create_child_order_crossover
 from utils import chemin_aleatoire, distance_totale, mutation
 from visuals import plot_best_path, plot_avg_distance, plot_genealogy
 from bee_count import MrBee
@@ -28,9 +27,11 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 50
+n_generations = 1000
 mutation_rate = 0.20
 elitisme_rates = [0.2]
+
+crossover_method = "order_crossover"  # Choisir "common_edges" ou "order_crossover" selon l'algo voulu
 
 # ----------------------
 # Génération initiale
@@ -65,7 +66,15 @@ for generation in range(n_generations):
     
     for _ in range(n_abeilles - n_parents):
         p1, p2 = random.sample(parents, 2)
-        child = create_child(p1, p2, all_nodes, hive=ruche)
+        
+        # selection de OX ou notre algo
+        if crossover_method == "common_edges":
+            child = create_child(p1, p2, all_nodes, hive=ruche)
+        elif crossover_method == "order_crossover":
+            child = create_child_order_crossover(p1, p2, all_nodes, hive=ruche)
+        else:
+            raise ValueError("Méthode de croisement non reconnue")
+        
         child = mutation(child, mutation_rate)
         enfants.append(child)
         gen_parents_children.append((p1, p2, child))
@@ -80,7 +89,8 @@ for generation in range(n_generations):
             chemin=child,
             n_generations=n_generations,
             mutation_rate=mutation_rate,
-            elitisme_rate=current_elitisme_rate
+            elitisme_rate=current_elitisme_rate,
+            crossover_method=crossover_method
         )
 
     parent_history.append(gen_parents_children)

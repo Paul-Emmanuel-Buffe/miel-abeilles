@@ -43,3 +43,48 @@ def create_child(parent_1, parent_2, all_nodes, hive):
 
     child.append(hive)
     return child
+
+def create_child_order_crossover(parent_1, parent_2, all_nodes, hive):
+    # Algorithme Order Crossover (OX)
+    
+    # Supprimer la ruche du début et fin pour le croisement
+    genes_1 = parent_1[1:-1]  # sans la ruche
+    genes_2 = parent_2[1:-1]  # sans la ruche
+    
+    size = len(genes_1)
+    
+    # Choisir deux points de coupure aléatoires
+    start, end = sorted(random.sample(range(size), 2))
+    
+    # Initialiser l'enfant avec des None
+    child = [None] * size
+    
+    # Copier le segment entre start et end du parent 1 vers l'enfant
+    child[start:end] = genes_1[start:end]
+    
+    # Remplir le reste avec les gènes du parent 2 dans l'ordre
+    current_pos = end
+    parent_pos = end
+    
+    # Parcourir le parent 2 à partir de end pour remplir les cases vides
+    for i in range(size):
+        if current_pos >= size:
+            current_pos = 0
+        if parent_pos >= size:
+            parent_pos = 0
+            
+        gene = genes_2[parent_pos]
+        if gene not in child:  # Si le gène n'est pas déjà dans l'enfant
+            child[current_pos] = gene
+            current_pos += 1
+        
+        parent_pos += 1
+        
+        # Si l'enfant est complet, sortir
+        if None not in child:
+            break
+    
+    # Réajouter la ruche au début et à la fin
+    child_with_hive = [hive] + child + [hive]
+    
+    return child_with_hive

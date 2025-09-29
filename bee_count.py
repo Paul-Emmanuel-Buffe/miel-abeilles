@@ -1,11 +1,6 @@
 import pandas as pd
 from datetime import datetime
 
-
-import pandas as pd
-from datetime import datetime
-
-
 #  Infos de toutes les abeilles générées
 class MrBee:          
 
@@ -19,6 +14,7 @@ class MrBee:
 # n_generations  : nombre total de générations de la simulation
 # mutation_rate  : taux de mutation utilisé
 # elitisme_rate  : taux d'élitisme de cette génération
+# crossover_method : méthode de croisement utilisée
 # timestamp      : Date & heure de l'enregistrement
     
     def __init__(self):
@@ -26,12 +22,12 @@ class MrBee:
         self.bees_df = pd.DataFrame(columns=[
             "id", "simulation_id", "generation", "distance",
             "parent_1", "parent_2", "chemin", "n_generations",
-            "mutation_rate", "elitisme_rate", "timestamp"
+            "mutation_rate", "elitisme_rate", "crossover_method", "timestamp"
         ])
         self.next_id = 1  # compteur automatique d'ID
 
     def add_bee(self, simulation_id, generation, distance, parent_1, parent_2, chemin, 
-                n_generations, mutation_rate, elitisme_rate):
+                n_generations, mutation_rate, elitisme_rate, crossover_method):  # AJOUT: crossover_method
         """
         Enregistre une abeille et renvoie son ID.
         """
@@ -43,12 +39,13 @@ class MrBee:
             "simulation_id": simulation_id,
             "generation": generation,
             "distance": distance,
-            "parent_1": parent_1,
-            "parent_2": parent_2,
-            "chemin": chemin,
+            "parent_1": str(parent_1),
+            "parent_2": str(parent_2),
+            "chemin": str(chemin),
             "n_generations": n_generations,
             "mutation_rate": mutation_rate,
             "elitisme_rate": elitisme_rate,
+            "crossover_method": crossover_method,  # AJOUT: crossover_method
             "timestamp": datetime.now()
         }
         return bee_id
