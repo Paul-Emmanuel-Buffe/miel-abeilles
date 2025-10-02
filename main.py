@@ -8,7 +8,6 @@ from utils import chemin_aleatoire, distance_totale, mutation
 from visuals import plot_best_path, plot_avg_distance, plot_genealogy
 from bee_count import MrBee
 
-
 # ----------------------
 # Coordonnées des fleurs + ruche
 # ----------------------
@@ -27,30 +26,46 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 1000
+n_generations = 10
 mutation_rate = 0.20
 elitisme_rates = [0.2]
-
-crossover_method = "order_crossover"  # Choisir "common_edges" ou "order_crossover" selon l'algo voulu
+crossover_method = "order_crossover"  # "common_edges" ou "order_crossover"
 
 # ----------------------
 # Génération initiale
 # ----------------------
-population = [chemin_aleatoire(fleurs, ruche) for _ in range(n_abeilles)]
+bee_counter = MrBee()
+simulation_id = 1
+
+population = []
+for i in range(n_abeilles):
+    chemin = chemin_aleatoire(fleurs, ruche)
+    # Utilisez bee_counter pour générer l'ID des abeilles initiales
+    bee_id = bee_counter.add_bee(
+        simulation_id=simulation_id,
+        generation=0,  # Génération initiale
+        distance=distance_totale(chemin, fleurs),
+        parent_1=None,  # Pas de parents pour la génération initiale
+        parent_2=None,
+        chemin=chemin,
+        n_generations=n_generations,
+        mutation_rate=mutation_rate,
+        elitisme_rate=elitisme_rates[0],
+        crossover_method=crossover_method
+    )
+    population.append((bee_id, chemin))
+
 all_nodes = list(range(len(fleurs)))
 
-# Pour stocker l’évolution des distances moyennes et les parents
+# Pour stocker l'évolution des distances moyennes et les parents
 avg_distances = []
-parent_history = []  # Liste de tuples (parents, enfants) par génération
+parent_history = []
 
-## ----------------------
+# ----------------------
 # Boucle évolution
 # ----------------------
-bee_counter = MrBee() # Initialisation de l'objet de comptage
-simulation_id = 1     # Renseigner l'id de la simulation
-
 for generation in range(n_generations):
-    distances = [distance_totale(chemin, fleurs) for chemin in population]
+    distances = [distance_totale(chemin, fleurs) for (_, chemin) in population]
     avg_distances.append(np.mean(distances))
 
     rate = elitisme_rates[min(generation, len(elitisme_rates)-1)]
@@ -58,66 +73,101 @@ for generation in range(n_generations):
     sorted_indices = np.argsort(distances)
     parents = [population[i] for i in sorted_indices[:n_parents]]
 
-    # Calculer le taux d'élitisme de cette génération
     current_elitisme_rate = elitisme_rates[min(generation, len(elitisme_rates)-1)]
 
     enfants = []
-    gen_parents_children = []  # stocke les relations parent->enfant
-    
+    gen_parents_children = []
+
     for _ in range(n_abeilles - n_parents):
-        p1, p2 = random.sample(parents, 2)
-        
-        # selection de OX ou notre algo
+        (p1_id, p1), (p2_id, p2) = random.sample(parents, 2)
+
+        # sélection crossover
         if crossover_method == "common_edges":
             child = create_child(p1, p2, all_nodes, hive=ruche)
         elif crossover_method == "order_crossover":
             child = create_child_order_crossover(p1, p2, all_nodes, hive=ruche)
         else:
             raise ValueError("Méthode de croisement non reconnue")
-        
-        child = mutation(child, mutation_rate)
-        enfants.append(child)
-        gen_parents_children.append((p1, p2, child))
 
-        # Enregistrement transmis à MrBee() - pour chaque enfant créé
-        bee_counter.add_bee(
+        child = mutation(child, mutation_rate)
+
+        # Création de l'enfant avec un nouvel ID via bee_counter
+        child_id = bee_counter.add_bee(
             simulation_id=simulation_id,
-            generation=generation,
+            generation=generation + 1,  # +1 car c'est une nouvelle génération
             distance=distance_totale(child, fleurs),
-            parent_1=p1,
-            parent_2=p2,
+            parent_1=p1_id,
+            parent_2=p2_id,
             chemin=child,
             n_generations=n_generations,
             mutation_rate=mutation_rate,
             elitisme_rate=current_elitisme_rate,
             crossover_method=crossover_method
         )
+        enfants.append((child_id, child))
+        gen_parents_children.append((p1_id, p2_id, child_id))
 
     parent_history.append(gen_parents_children)
     population = parents + enfants
+
 # ----------------------
 # Résultat final
 # ----------------------
-distances = [distance_totale(chemin, fleurs) for chemin in population]
+distances = [distance_totale(chemin, fleurs) for (_, chemin) in population]
 best_idx = np.argmin(distances)
-best_chemin = population[best_idx]
-print("Meilleur parcours :", best_chemin)
+best_id, best_chemin = population[best_idx]
+
+print("Meilleur parcours (id={}):".format(best_id), best_chemin)
 print("Distance :", distances[best_idx])
 
+# ----------------------
+# Visualisation
+# ----------------------
 plot_best_path(fleurs, best_chemin)
 plot_avg_distance(avg_distances, n_generations)
-plot_genealogy(parent_history, best_chemin, n_generations)
+# plot_genealogy(parent_history, best_chemin, n_generations)  # si souhaité
 
-# Enregistrement de TOUTES les abeilles de la simulation effectuée
+# ----------------------
+# Sauvegarde CSV
+# ----------------------
 bee_counter.save_csv("bees_log.csv")
 
-# +++++++ A suprimer => visualistion des données ++++
-
-
-# Charger le CSV
+# ----------------------
+# Aperçu CSV
+# ----------------------
 df = pd.read_csv("bees_log.csv")
-
-# Affichage 
 print("\n=== Aperçu des 5 premières abeilles ===\n")
-print(df.head())  
+print(df.head())
 print("\n======================================\n")
+
+# Analyse des données générées
+print("=== ANALYSE DES DONNÉES GÉNÉRÉES ===")
+print(f"Nombre total d'abeilles enregistrées: {len(df)}")
+print(f"ID minimum: {df['id'].min()}")
+print(f"ID maximum: {df['id'].max()}")
+print(f"Générations: de {df['generation'].min()} à {df['generation'].max()}")
+
+# Vérification de la cohérence des parents
+all_ids = set(df['id'])
+problematic_parents = []
+
+for index, row in df.iterrows():
+    for parent_col in ['parent_1', 'parent_2']:
+        if pd.notna(row[parent_col]):
+            parent_id = int(row[parent_col])
+            if parent_id not in all_ids:
+                problematic_parents.append({
+                    'child_id': row['id'],
+                    'parent_type': parent_col,
+                    'parent_id': parent_id,
+                    'generation': row['generation']
+                })
+
+if problematic_parents:
+    print(f"\n⚠️  ATTENTION: {len(problematic_parents)} parents référencés n'existent pas:")
+    for problem in problematic_parents[:5]:  # Afficher seulement les 5 premiers
+        print(f"  Abeille {problem['child_id']} (génération {problem['generation']}) → {problem['parent_type']} = {problem['parent_id']}")
+    if len(problematic_parents) > 5:
+        print(f"  ... et {len(problematic_parents) - 5} autres")
+else:
+    print("✓ Tous les parents référencés existent dans les données")

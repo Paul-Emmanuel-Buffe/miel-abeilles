@@ -21,15 +21,18 @@ def plot_avg_distance(avg_distances, n_generations):
     plt.grid(True)
     plt.show()
 
-def plot_genealogy(parent_history, best_chemin, n_generations):
-    plt.figure(figsize=(12,6))
-    generation_to_plot = min(10, n_generations)  # limite pour ne pas surcharger
+def plot_genealogy(parent_history, best_chemin_id, n_generations):
+    plt.figure(figsize=(12, 6))
+    generation_to_plot = min(n_generations - 1, len(parent_history))  # On commence à la génération 1
+
     y_offset = 0
     for gen in range(generation_to_plot):
-        for p1, p2, child in parent_history[gen]:
-            if child == best_chemin:  # tracer uniquement les liens menant au meilleur chemin
-                plt.plot([gen, gen+1], [y_offset, y_offset+1], 'ro-')
-                y_offset += 1
+        if gen < len(parent_history):
+            for p1, p2, child_id in parent_history[gen]:
+                if child_id == best_chemin_id:
+                    plt.plot([gen, gen + 1], [y_offset, y_offset + 1], 'ro-')
+                    y_offset += 1
+
     plt.xlabel("Générations")
     plt.ylabel("Chemins menant au meilleur parcours")
     plt.title("Arbre généalogique simplifié du meilleur parcours")
