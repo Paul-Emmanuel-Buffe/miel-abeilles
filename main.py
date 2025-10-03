@@ -2,6 +2,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import pandas as pd
+from genealogy import GenealogyTree
+from visuals import plot_genealogy_tree
 
 from selection_rules import create_child, create_child_order_crossover
 from utils import chemin_aleatoire, distance_totale, mutation
@@ -26,7 +28,7 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 10
+n_generations = 300
 mutation_rate = 0.20
 elitisme_rates = [0.2]
 crossover_method = "order_crossover"  # "common_edges" ou "order_crossover"
@@ -121,53 +123,16 @@ print("Meilleur parcours (id={}):".format(best_id), best_chemin)
 print("Distance :", distances[best_idx])
 
 # ----------------------
-# Visualisation
-# ----------------------
-plot_best_path(fleurs, best_chemin)
-plot_avg_distance(avg_distances, n_generations)
-# plot_genealogy(parent_history, best_chemin, n_generations)  # si souhaité
-
-# ----------------------
 # Sauvegarde CSV
 # ----------------------
 bee_counter.save_csv("bees_log.csv")
 
 # ----------------------
-# Aperçu CSV
+# Visualisation
 # ----------------------
-df = pd.read_csv("bees_log.csv")
-print("\n=== Aperçu des 5 premières abeilles ===\n")
-print(df.head())
-print("\n======================================\n")
+plot_best_path(fleurs, best_chemin)
+plot_avg_distance(avg_distances, n_generations)
 
-# Analyse des données générées
-print("=== ANALYSE DES DONNÉES GÉNÉRÉES ===")
-print(f"Nombre total d'abeilles enregistrées: {len(df)}")
-print(f"ID minimum: {df['id'].min()}")
-print(f"ID maximum: {df['id'].max()}")
-print(f"Générations: de {df['generation'].min()} à {df['generation'].max()}")
-
-# Vérification de la cohérence des parents
-all_ids = set(df['id'])
-problematic_parents = []
-
-for index, row in df.iterrows():
-    for parent_col in ['parent_1', 'parent_2']:
-        if pd.notna(row[parent_col]):
-            parent_id = int(row[parent_col])
-            if parent_id not in all_ids:
-                problematic_parents.append({
-                    'child_id': row['id'],
-                    'parent_type': parent_col,
-                    'parent_id': parent_id,
-                    'generation': row['generation']
-                })
-
-if problematic_parents:
-    print(f"\n⚠️  ATTENTION: {len(problematic_parents)} parents référencés n'existent pas:")
-    for problem in problematic_parents[:5]:  # Afficher seulement les 5 premiers
-        print(f"  Abeille {problem['child_id']} (génération {problem['generation']}) → {problem['parent_type']} = {problem['parent_id']}")
-    if len(problematic_parents) > 5:
-        print(f"  ... et {len(problematic_parents) - 5} autres")
-else:
-    print("✓ Tous les parents référencés existent dans les données")
+print(f"\n=== Génération de l'arbre généalogique de l'abeille {best_id} ===")
+tree = GenealogyTree("bees_log.csv")
+plot_genealogy_tree(tree, best_id)
