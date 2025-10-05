@@ -1,6 +1,3 @@
-Parfait, voici **le README complet en anglais** prêt à copier-coller, en un seul bloc Markdown :
-
-```markdown
 # Honey and Bees – Optimization with Genetic Algorithms
 
 **Contributors:** Paul-Emmanuel Buffe, Yannis Messadia
@@ -145,4 +142,3 @@ python visuals.py
 3. **Analyze performance and parameters**:
    Open `colony.ipynb` in Jupyter Notebook.
 
-```
