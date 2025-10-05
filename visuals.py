@@ -1,9 +1,8 @@
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch
-import pandas as pd
-import os
-
+import os                # pour vérifier l'existence du fichier CSV
+import pandas as pd      
+import matplotlib.pyplot as plt  
+from collections import defaultdict  # pour organiser les abeilles par génération
+from genealogy import GenealogyTree
 
 def plot_best_path(fleurs, best_chemin):
     """Affiche le meilleur parcours trouvé par l'algorithme génétique"""
@@ -30,130 +29,58 @@ def plot_avg_distance(avg_distances, n_generations):
     plt.show()
 
 
-def plot_genealogy(parent_history, best_chemin_id, n_generations):
-    """Affiche un arbre généalogique simplifié (ancienne version)"""
-    plt.figure(figsize=(12, 6))
-    generation_to_plot = min(n_generations - 1, len(parent_history))
-
-    y_offset = 0
-    for gen in range(generation_to_plot):
-        if gen < len(parent_history):
-            for p1, p2, child_id in parent_history[gen]:
-                if child_id == best_chemin_id:
-                    plt.plot([gen, gen + 1], [y_offset, y_offset + 1], 'ro-')
-                    y_offset += 1
-
-    plt.xlabel("Générations")
-    plt.ylabel("Chemins menant au meilleur parcours")
-    plt.title("Arbre généalogique simplifié du meilleur parcours")
-    plt.show()
-
-
-def plot_genealogy_tree(tree, bee_id):
-    """Affiche l'arbre généalogique complet d'une abeille"""
-    
-    # 1. Récupérer les données
-    bee_info = tree.get_bee_info(bee_id)
-    if not bee_info:
+def plot_classic_tree(tree, bee_id):
+     # Récupérer les ancêtres
+    ancestors = tree.get_ancestors(bee_id)
+    if not ancestors:
         print(f"Abeille {bee_id} introuvable")
         return
     
-    ancestors = tree.get_ancestors(bee_id)
-    niveaux = tree.organize_by_level(ancestors)
-    positions = tree.calculate_positions(niveaux)
+    # Organiser les abeilles par génération
+    levels = defaultdict(list)
+    for b_id, info in ancestors.items():
+        levels[info['generation']].append(b_id)
     
-    # 2. Créer la figure
-    fig, ax = plt.subplots(figsize=(18, 12))
-    ax.set_facecolor('#F8F9FA')
-    fig.patch.set_facecolor('#F8F9FA')
-    ax.axis('off')
+    # Calculer positions simples : x centré par génération
+    positions = {}
+    for level, bees in levels.items():
+        nb = len(bees)
+        for i, b_id in enumerate(sorted(bees)):
+            x = i - nb / 2  # centrer horizontalement
+            y = -level       # génération 0 en haut
+            positions[b_id] = (x, y)
+    
+    # Créer la figure
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_aspect('equal')
+    ax.axis('off')
     
-    # 3. Dessiner les lignes parent → enfant
-    for bee_id_key, info in ancestors.items():
-        if bee_id_key not in positions:
-            continue
-            
-        x1, y1 = positions[bee_id_key]
-        
-        # Parent 1 (ligne bleue)
-        if pd.notna(info['parent_1']):
-            parent_id = int(info['parent_1'])
-            if parent_id in positions:
-                x2, y2 = positions[parent_id]
-                ax.plot([x1, x2], [y1, y2], color='#2E86AB', lw=2, alpha=0.7, zorder=1)
-        
-        # Parent 2 (ligne violette)
-        if pd.notna(info['parent_2']):
-            parent_id = int(info['parent_2'])
-            if parent_id in positions:
-                x2, y2 = positions[parent_id]
-                ax.plot([x1, x2], [y1, y2], color='#A23B72', lw=2, alpha=0.7, zorder=1)
+    # Tracer les liens parent → enfant
+    for b_id, info in ancestors.items():
+        x_child, y_child = positions[b_id]
+        for parent_col in ['parent_1', 'parent_2']:
+            if pd.notna(info[parent_col]):
+                parent_id = int(info[parent_col])
+                if parent_id in positions:
+                    x_parent, y_parent = positions[parent_id]
+                    ax.plot([x_child, x_parent], [y_child, y_parent],
+                            color='gray', lw=1)
     
-    # 4. Dessiner les rectangles (abeilles)
-    for bee_id_key, (x, y) in positions.items():
-        est_selectionnee = (bee_id_key == bee_id)
-        
-        if est_selectionnee:
-            couleur, bordure, texte = '#F18F01', '#C73E1D', '#2C3E50'
-            taille = 1.2
+    # Tracer les nœuds
+    for b_id, (x, y) in positions.items():
+        if b_id == bee_id:
+            ax.scatter(x, y, s=200, color='orange', zorder=5)
         else:
-            couleur, bordure, texte = '#2E86AB', '#1B5E7D', '#F8F9FA'
-            taille = 1.0
-        
-        largeur, hauteur = 0.6 * taille, 0.2 * taille
-        
-        # Fond blanc (cache les lignes)
-        fond = FancyBboxPatch((x - largeur/2, y - hauteur/2), largeur, hauteur,
-                              boxstyle="round,pad=0.03", facecolor='white',
-                              edgecolor='white', zorder=10)
-        ax.add_patch(fond)
-        
-        # Rectangle coloré
-        rect = FancyBboxPatch((x - largeur/2, y - hauteur/2), largeur, hauteur,
-                              boxstyle="round,pad=0.03", facecolor=couleur,
-                              edgecolor=bordure, linewidth=2, zorder=11)
-        ax.add_patch(rect)
-        
-        # Texte (ID de l'abeille)
-        ax.text(x, y, f'{bee_id_key}', ha='center', va='center',
-                fontweight='bold', color=texte, fontsize=7, zorder=12)
+            ax.scatter(x, y, s=100, color='skyblue', zorder=5)
+        ax.text(x, y, str(b_id), ha='center', va='center', fontsize=8, zorder=6)
     
-    # 5. Ajuster les limites
-    all_x = [x for x, y in positions.values()]
-    all_y = [y for x, y in positions.values()]
-    if all_x and all_y:
-        ax.set_xlim(min(all_x)-1.5, max(all_x)+1.5)
-        ax.set_ylim(min(all_y)-1, max(all_y)+1)
-    
-    # 6. Titre et légende
-    plt.title(f'Arbre Généalogique - Abeille {bee_id}\n'
-              f'Distance: {bee_info["distance"]:.2f} • '
-              f'Génération: {bee_info["generation"]}',
-              fontsize=16, fontweight='bold', color='#2C3E50', pad=20)
-    
-    legende = [
-        mpatches.Patch(facecolor='#F18F01', edgecolor='#C73E1D', 
-                       label=f'Abeille {bee_id}'),
-        mpatches.Patch(facecolor='#2E86AB', alpha=0.9, label='Lien parent 1'),
-        mpatches.Patch(facecolor='#A23B72', alpha=0.9, label='Lien parent 2')
-    ]
-    ax.legend(handles=legende, loc='lower center', 
-              bbox_to_anchor=(0.5, -0.05), ncol=3, fontsize=11)
-    
-    # Info nombre d'ancêtres
-    ax.text(0.5, -0.12, f'{len(ancestors)} ancêtres • {len(niveaux)} niveaux',
-            transform=ax.transAxes, ha='center', fontsize=10, 
-            color='#7F8C8D', style='italic')
-    
-    plt.tight_layout()
+    # Afficher
+    plt.title(f"Arbre généalogique classique - Abeille {bee_id}", fontsize=14)
     plt.show()
 
 
 def explore_genealogy_interactive():
-    """Mode interactif pour explorer les arbres généalogiques"""
-    from genealogy import GenealogyTree
-    
+    # Mode interactif pour explorer les arbres généalogiques
     if not os.path.exists('bees_log.csv'):
         print("Erreur: Fichier bees_log.csv non trouvé")
         return
@@ -183,7 +110,7 @@ def explore_genealogy_interactive():
                 continue
             
             print(f"Génération de l'arbre pour l'abeille {bee_id}...")
-            plot_genealogy_tree(tree, bee_id)
+            plot_classic_tree(tree, bee_id)
             
         except ValueError:
             print("Erreur: Veuillez entrer un nombre valide")

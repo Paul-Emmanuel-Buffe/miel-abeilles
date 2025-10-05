@@ -2,12 +2,12 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import pandas as pd
-from genealogy import GenealogyTree
-from visuals import plot_genealogy_tree
+import os
 
+from genealogy import GenealogyTree
+from visuals import plot_best_path, plot_avg_distance, plot_classic_tree  # <-- nouveau nom
 from selection_rules import create_child, create_child_order_crossover
 from utils import chemin_aleatoire, distance_totale, mutation
-from visuals import plot_best_path, plot_avg_distance, plot_genealogy
 from bee_count import MrBee
 
 # ----------------------
@@ -28,7 +28,7 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 300
+n_generations = 10
 mutation_rate = 0.20
 elitisme_rates = [0.2]
 crossover_method = "order_crossover"  # "common_edges" ou "order_crossover"
@@ -42,12 +42,11 @@ simulation_id = 1
 population = []
 for i in range(n_abeilles):
     chemin = chemin_aleatoire(fleurs, ruche)
-    # Utilisez bee_counter pour générer l'ID des abeilles initiales
     bee_id = bee_counter.add_bee(
         simulation_id=simulation_id,
-        generation=0,  # Génération initiale
+        generation=0,
         distance=distance_totale(chemin, fleurs),
-        parent_1=None,  # Pas de parents pour la génération initiale
+        parent_1=None,
         parent_2=None,
         chemin=chemin,
         n_generations=n_generations,
@@ -83,7 +82,6 @@ for generation in range(n_generations):
     for _ in range(n_abeilles - n_parents):
         (p1_id, p1), (p2_id, p2) = random.sample(parents, 2)
 
-        # sélection crossover
         if crossover_method == "common_edges":
             child = create_child(p1, p2, all_nodes, hive=ruche)
         elif crossover_method == "order_crossover":
@@ -93,10 +91,9 @@ for generation in range(n_generations):
 
         child = mutation(child, mutation_rate)
 
-        # Création de l'enfant avec un nouvel ID via bee_counter
         child_id = bee_counter.add_bee(
             simulation_id=simulation_id,
-            generation=generation + 1,  # +1 car c'est une nouvelle génération
+            generation=generation + 1,
             distance=distance_totale(child, fleurs),
             parent_1=p1_id,
             parent_2=p2_id,
@@ -135,4 +132,4 @@ plot_avg_distance(avg_distances, n_generations)
 
 print(f"\n=== Génération de l'arbre généalogique de l'abeille {best_id} ===")
 tree = GenealogyTree("bees_log.csv")
-plot_genealogy_tree(tree, best_id)
+plot_classic_tree(tree, best_id)  
