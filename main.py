@@ -28,7 +28,7 @@ fleurs = np.vstack([ruche_coord, fleurs_fleurs])  # La ruche devient l'indice 0
 # ----------------------
 ruche = 0
 n_abeilles = 100
-n_generations = 10
+n_generations = 1300
 mutation_rate = 0.20
 elitisme_rates = [0.2]
 crossover_method = "order_crossover"  # "common_edges" ou "order_crossover"
