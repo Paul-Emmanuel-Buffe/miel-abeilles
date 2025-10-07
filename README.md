@@ -182,6 +182,3 @@ python main.py
 ```bash
 python visuals.py
 ```
-
-3. **Analyze performance and parameters**:
-   Open `colony.ipynb` in Jupyter Notebook.
